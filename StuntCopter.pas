@@ -62,12 +62,15 @@ loop.. to enable just one cloud we've had to split duties.  Only the copter,
 man and wagon are drawn each loop.  The Cross/yoke, Height and Clouds are
 drawn every third loop.}
 
-USES MacIntf; {used for TML version 2.0,instead of the 'includes' directive}
+{ These directives must precede the "uses" line }
+{$T APPLCOPT}       { Set TYPE and CREATOR }
+{$B+}               { Set bundle bit }
+{$R aSCopt.rsrc}    { Link resource file }
+{$U-}               { Don't autolink to runtime units }
 
-{$T APPL COPT set the TYPE and CREATOR}
-{$B+ set the application's bundle bit }
+{ Note, import order is important }
+uses Memtypes,QuickDraw,OSIntf,ToolIntf,PackIntf;
 
-{$L aSCopt.rsrc}   { Link resource file }
 
 CONST
    WindResId = 128;   {Window Resource}
@@ -227,6 +230,16 @@ VAR
    Squarewave:            wavePtr;
 
 {**********************************************}
+
+procedure inc(var i: integer);
+begin
+    i := i + 1;
+end;
+
+procedure dec(var i: integer);
+begin
+    i := i - 1;
+end;
 
 procedure LevelToButtonTitle(aLevel:integer);
 {put level number into LevelButton title, 2 digits only}
