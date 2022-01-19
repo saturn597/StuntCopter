@@ -9,8 +9,9 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Classic Macs used carriage returns as newlines.
+# Classic Macs used carriage returns as line breaks. Switch to \n.
 sed 's/\r/\n/g' mnt/StuntCopter/StuntCopter.pas > ./StuntCopter.pas
+
 chmod 666 ./StuntCopter.pas
 
 # Clean up
