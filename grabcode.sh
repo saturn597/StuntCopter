@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Doing development in Mini vMac, so the files are on an HFS disk image.
-mount -t hfs stuntcopter.dsk mnt
+# This script grabs them off the image and moves them to the project directory.
+
+mount -t hfs stuntcopter.dsk mnt -o ro
 
 if [ $? -ne 0 ]; then
   echo "Script failed."
