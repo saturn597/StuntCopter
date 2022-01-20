@@ -11,6 +11,11 @@ This offered me the opportunity to explore the internals of classic Mac systems 
 
 Thank you Duane Blehm!
 
+## Changes
+
+So far just a couple of changes to the original:
+- Runs in Turbo Pascal instead of TML Pascal.
+- Added an "Initial difficulty" dialog. Select under "Options > Initial difficulty..". You can change the initial wagon speed, or the gravity, or both.
 
 ## Using these files
 Accessing and using these files may be somewhat tricky. Some of the software needed is decades old.

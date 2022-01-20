@@ -105,6 +105,9 @@ TYPE
    RectGroup = Array[1..6] of Rect;   { for Score and HiScore }
 
 VAR
+   initialGravity: Integer;
+   initialWagonSpeed: Integer;
+
    SpeedTrapOn:         Boolean;{we'll flag if user wants to slow down}
    SpeedFactor:         Longint;{duration of Delay for slowdowns}
    myMenus:               Array[1..lastMenu] of MenuHandle;
@@ -119,12 +122,14 @@ VAR
    AboutDialog:         DialogPtr;   {about stunt... dialog window}
    SourceDialog,
    SpeedDialog,
+   DifficultyDialog,
    BitmapDialog:         DialogPtr;
    wRecord:               WindowRecord;
    dRecord:               DialogRecord;
    AboutdRecord:         DialogRecord;
    SrcRec,
    SpdRec,
+   DiffRec,
    BitRec:                  DialogRecord;{source,speed & Bitmap dialogs}
    Screen,DragArea:   Rect;
    LastMouseUp:         LongInt;      {track mouseup info,test for double-click}
@@ -458,11 +463,18 @@ Begin
    AboutDialog := GetNewDialog(AboutId,@AboutdRecord,myWindow);
    {our new dialogs}
    SourceDialog := GetNewDialog(137,@SrcRec,myWindow);
+   BitMapDialog := GetNewDialog(139,@BitRec,myWindow);
+
    SpeedDialog := GetNewDialog(138,@SpdRec,myWindow);
    GetDItem(SpeedDialog,2,h,myHandle,tRect);
    SetCtlValue(ControlHandle(myHandle),1);{click the Normal Box}
    SpeedTrapOn := False;
-   BitMapDialog := GetNewDialog(139,@BitRec,myWindow);
+
+   DifficultyDialog := GetNewDialog(134, @DiffRec, myWindow);
+   GetDItem(DifficultyDialog, 5, h, myHandle, tRect);
+   SetCtlValue(ControlHandle(myHandle), 1);
+   GetDItem(DifficultyDialog, 8, h, myHandle, tRect);
+   SetCtlValue(ControlHandle(myHandle), 1);
 
    BeginButton := GetNewControl(pressBegin,myWindow);
    ResumeButton := GetNewControl(pressResume,myWindow);
@@ -784,17 +796,88 @@ Begin
    SetPort(tPort);{restore port}
 end;
 
-procedure SetControlValue(which:integer);
+procedure SetRadio
+(which, lower, upper: integer; dialog: DialogPtr);
 var
-   i,h:integer;
-   tRect:Rect;
+   i : Integer;
+   t : Integer;
+   tHandle : Handle;
+   tRect : Rect;
 Begin
-   For i := 2 to 4 do begin
-         GetDItem(SpeedDialog,i,h,myHandle,tRect);
-         If i = which then SetCtlValue(ControlHandle(myHandle),1)
-         else SetCtlValue(ControlHandle(myHandle),0);
-      end;
+   for i := lower to upper do begin
+      GetDItem(dialog, i, t, tHandle, tRect);
+      if i = which then SetCtlValue(ControlHandle(tHandle), 1)
+      else SetCtlValue(ControlHandle(tHandle), 0);
+   end;
 End;
+
+procedure SetSpeedControl(which:Integer);
+Begin
+   SetRadio(which, 2, 4, SpeedDialog);
+End;
+
+procedure SetWagonSpeedControl(which: Integer);
+Begin
+   SetRadio(which, 5, 7, DifficultyDialog);
+End;
+
+procedure SetGravityControl(which: Integer);
+Begin
+   SetRadio(which, 8, 11, DifficultyDialog);
+End;
+
+procedure DisplayDifficultyDialog;
+var
+   itemHit, i: integer;
+   tPort:GrafPtr;
+
+   t: integer;
+   tHandle: Handle;
+   tRect: Rect;
+
+   selectedGravity: Integer;
+   selectedSpeed: Integer;
+Begin
+   GetPort(tPort);
+   SetPort(DifficultyDialog);
+   SelectWindow(DifficultyDialog);
+   ShowWindow(DifficultyDialog);
+
+   selectedGravity := initialGravity;
+   selectedSpeed := initialWagonSpeed;
+
+   setWagonSpeedControl(selectedSpeed + 4);
+   setGravityControl(12 - selectedGravity);
+
+   { Draw hilite on OK button }
+   GetDItem(DifficultyDialog, ok, t, tHandle, tRect);
+   PenSize(3, 3);
+   InsetRect(tRect, -4, -4);
+   FrameRoundRect(tRect, 16, 16);
+
+   Repeat
+      ModalDialog(Nil, itemHit);
+      if (itemHit >= 5) and (itemHit <= 7) then begin
+         { Player hit a wagon speed radio button }
+         SetWagonSpeedControl(itemHit);
+         SelectedSpeed := itemHit - 4;
+      end
+         else if (itemHit > 7) then begin
+            { Player hit a gravity radio button }
+            SetGravityControl(itemHit);
+            SelectedGravity := 12 - itemHit;
+         end
+         else if itemHit = 1 then begin
+            initialGravity := selectedGravity;
+            initialWagonSpeed := selectedSpeed;
+        end;
+   Until itemHit <= 2;
+
+	  HideWindow(DifficultyDialog);
+	  SelectWindow(myWindow);{restore our game window}
+	  SetPort(tPort);{restore port}
+End;
+
 procedure DisplaySpeedDialog;
 var
    itemHit,i: integer;
@@ -809,16 +892,16 @@ Begin
       ModalDialog(Nil,itemHit);   {close it no matter what was hit}
       Case itemHit of
       2:Begin
-            SetControlValue(2);
+            SetSpeedControl(2);
             SpeedTrapOn := False;
          end;{2:}
       3:Begin
-            SetControlValue(3);
+            SetSpeedControl(3);
             SpeedFactor := 1;
             SpeedTrapOn := True;
          end;
       4:Begin
-            SetControlValue(4);
+            SetSpeedControl(4);
             SpeedFactor := 2;
             SpeedTrapOn := True;
          end;
@@ -871,6 +954,7 @@ Begin
          4: DisplaySpeedDialog;
          5: DisplaySourceDialog;
          6: DisplayBitmapDialog;{show our pics and shapes}
+         7: DisplayDifficultyDialog;
          end; { case theItem}
    End;
    HiliteMenu(0);
@@ -914,9 +998,11 @@ Begin
    MenLeft := 5;  { # of men/level }
    ManStatus := 4;  { a man is hanging from the copter }
    GoodJumps := 0;   { # of successfull jumps }
-   WagonSpeed := 1;  { Slowest, wagon will move 1 pixel per loop }
-   Gravity := 4;    { fastest, man drops 4 pixels per loop }
    CurrentLevel := 1;   { keeps count of levels...}
+
+   { User can set these two... }
+   WagonSpeed := initialWagonSpeed;
+   Gravity := initialGravity;
 
    For i := 1 to 5 do begin   { erase the thumbs...}
       EraseRect(ThumbUp[i]);
@@ -1810,6 +1896,9 @@ Begin
    FlushEvents(everyEvent,0);     {clear events}
    Screen := ScreenBits.Bounds;  { Get screen dimensions from thePort }
    with Screen do SetRect(DragArea,Left+4,Top+24,Right-4,Bottom-4);
+
+   initialWagonSpeed := 1;
+   initialGravity := 4;
 End;
 
 {Main Program begins here}
